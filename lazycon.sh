@@ -16,48 +16,7 @@ else
 fi
 
 if [[ $1 == "-h" || $1 == "--help" ]] ; then
-echo '
-please config /your/home/.ssh/config file as following
-Here is config example
-Host sydeny-jump
- HostName 5.6.7.8
- User usera
- #cmd_login nsu
- #word passwor_without_empty_space
-
-Host sydeny-jump2
- HostName 5.6.7.9
- User usr2
- IdentityFile /home/user/ssh_rsa
- #cmd sudo su -
- #word passwor_without_empty_space
-echo 
-
-How to use:
-
-1.use it  current folder name
-  if you on the sydeny folder
-  lazycon.sh jump
-# the connnection string will transform to sydney-jump
-
-2.use it as shortcut
-  lazycon.sh sydney-jump
-then it will connection sydney-jump automaticlly
-
-And you can using following configuration as ssh autologin if you have the ssh key
-
-make a local proxy 
-
-lazycon.sh jump
-
-lazycon.sh jump  -p 1433:sql-hostname:1433
-
-lazycon.sh jump  -f file_to_upload
-#it will upload to /tmp
-
-
-lazycon.sh jump  -d full_file_path_to_download
-'
+  cat README.md
 fi
 
 if [[ $1 == "-q" ]] ; then
