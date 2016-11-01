@@ -1,10 +1,15 @@
 #!/bin/bash
 trap "kill 0" SIGINT SIGKILL
-if [[ $1 == "-d" || $1 == "--debug" ]] ; then
+if [[ $1 =~ ^-d+ || $1 == "--debug" ]] ; then
   EXP_DEBUG_BEGIN=""
   EXP_DEBUG_END='
   '
+    if [[ $1 == -dd ]]
+    then
+      SSH_DEBUG="-v"
+    fi
   set -x 
+  SHELL_DEBUG='-d'
   shift
 else
   EXP_DEBUG_BEGIN="log_user 0
@@ -29,11 +34,12 @@ if [[ $# == 0 || $1 =~ ^/.* ]] ; then
 fi
 #IP_ADD=`ifconfig  | grep 192.168.0 | grep -i ipv4 | sed -e 's/^.*://g' -e 's/(.*$//g' | tr -d ' '`
 orignal_1=$1
+cd `readlink -f .`
 shopt -s nocasematch
 if grep '^Host *'$1'$' ~/.ssh/config > /dev/null
 then
 	grep_string=$1
-elif grep '^Host '`basename $PWD`-$1'$' ~/.ssh/config > /dev/null
+elif grep '^Host *'`basename $PWD`-$1'$' ~/.ssh/config > /dev/null
 then
 	grep_string="`basename $PWD`-$1"
 else
@@ -49,7 +55,7 @@ fi
 oldIFS="$IFS"
 IFS=$'\n'
 word_array=( `
-cat ~/.ssh/config | sed -n -e "/Host ${grep_string}/,/Host /p"  | sed -n -e '1d;$d;' -r -e '/#word|#cmd/p' | sed -re 's/^[[:space:]]*#//g' 
+cat ~/.ssh/config | sed -n -e "/^Host ${grep_string}$/,/Host /p"  | sed -n -e '1d;$d;' -r -e '/#word|#cmd/p' | sed -re 's/^[[:space:]]*#//g' 
  `)
 # todo improve some password comword
 for x in ${word_array[*]}
@@ -59,7 +65,8 @@ do
     expect_words="${expect_words}
     expect \"\\r\" {
       sleep 1
-      send \"${x#cmd* }\\r\"
+      send {${x#cmd* }}
+      send \"\\r\"
       sleep 1
     }
     "
@@ -70,7 +77,8 @@ do
       expect_login_words="${expect_login_words}
       expect \"\\r\" {
         sleep 1
-        send \"${x#cmd* }\\r\"
+        send {${x#cmd* }}
+        send \"\\r\"
         sleep 1
       }
       "
@@ -116,7 +124,7 @@ if [[ $1 =~ -[cxufdp] ]] ; then
     FUNC=cmd
 	expect -c '
      '"${EXP_DEBUG_BEGIN}"' 
-		spawn -noecho ssh -o StrictHostKeyChecking=no -t '${connect_string}' '${cmd_login}'
+		spawn -noecho ssh '${SSH_DEBUG}' -o StrictHostKeyChecking=no -t '${connect_string}' '"${cmd_login}"'
       '"${expect_login_words}"'
 			expect "\r" {
 				sleep 3
@@ -147,15 +155,15 @@ if [[ $1 =~ -[cxufdp] ]] ; then
   fi
   if [[ ${operation} == "-x" ]] ; then
     FUNC=exec
-    $0 $orignal_1 -c "rm -f /var/tmp/`basename $1 `;  chmod 777 /var/tmp/`basename $1 ` ; "
-    $0 $orignal_1 -u $1
-    $0 $orignal_1 -c " /var/tmp/`basename $1 ` $2 ; /bin/rm -v /var/tmp/`basename $1 `;"
+    $0 $SHELL_DEBUG $orignal_1 -c "rm -f /var/tmp/`basename $1 `;  chmod 777 /var/tmp/`basename $1 ` ; "
+    $0 $SHELL_DEBUG $orignal_1 -u $1
+    $0 $SHELL_DEBUG $orignal_1 -c " /var/tmp/`basename $1 ` $2 ; /bin/rm -v /var/tmp/`basename $1 `;"
   fi
   if [[ ${operation} == "-f" ||  ${operation} == "-u" ]] ; then
     FUNC=trans
 	expect -c '
      '"${EXP_DEBUG_BEGIN}"' 
-		spawn -noecho scp -r '"$1"' '${connect_string}':/var/tmp
+		spawn -noecho scp '${SSH_DEBUG}' -r '"$1"' '${connect_string}':/var/tmp
       '"${expect_passwds}"'
       '"${EXP_DEBUG_END}"'
       interact
@@ -174,24 +182,21 @@ if [[ $1 =~ -[cxufdp] ]] ; then
   if [[ ${operation} == "-d" ]] ; then
     FUNC=trans
     filename=`basename $1`
-    $0 $orignal_1 -c "/bin/cp -R ${1/~/\~} /var/tmp/${filename}"
+    $0 $SHELL_DEBUG $orignal_1 -c "/bin/cp -R ${1/~/\~} /var/tmp/${filename}"
     expect -c '
      '"${EXP_DEBUG_BEGIN}"' 
-      spawn -noecho scp -q -r '${connect_string}:"/var/tmp/${filename}"' .
-        expect "*assword" {
-          send "'${erm_word}'\r"
-          sleep 1
-        }
+      spawn -noecho scp '${SSH_DEBUG}' -q -r '${connect_string}:"/var/tmp/${filename}"' .
+      '"${expect_login_words}"'
       '"${EXP_DEBUG_END}"'
       expect eof
       '
-      $0 $orignal_1 -c "/bin/rm -r /var/tmp/$filename "
+      $0 $SHELL_DEBUG $orignal_1 -c "/bin/rm -r /var/tmp/$filename "
   fi
   if [[ ${operation} == "-fd" ]] ; then
     FUNC=trans
     expect -c '
      '"${EXP_DEBUG_BEGIN}"' 
-      spawn -noecho scp -q -r '${connect_string}:${1/~/\~}' .
+      spawn -noecho scp '${SSH_DEBUG}' -q -r '${connect_string}:${1/~/\~}' .
       '"${expect_words}"'
       '"${EXP_DEBUG_END}"'
       '
@@ -200,7 +205,7 @@ if [[ $1 =~ -[cxufdp] ]] ; then
     FUNC=proxy
       expect -c '
          '"${EXP_DEBUG_BEGIN}"' 
-        spawn -noecho ssh -N -L '"$1"' '${connect_string}'
+        spawn -noecho ssh '${SSH_DEBUG}' -N -L '"$1"' '${connect_string}'
           '"${expect_login_words}"'
           '"${EXP_DEBUG_END}"'
           interact
@@ -211,8 +216,9 @@ fi
 if [[ $FUNC == login ]] ; then
 	expect -c '
      '"${EXP_DEBUG_BEGIN}"' 
-		spawn -noecho ssh -o StrictHostKeyChecking=no -t '${connect_string}' '${cmd_login}'
+		spawn -noecho ssh '${SSH_DEBUG}' -o StrictHostKeyChecking=no -t '${connect_string}' '"${cmd_login}"'
       '"${expect_login_words}"'
+      sleep 1
       '"${EXP_DEBUG_END}"'
       interact
 		' 2>/dev/null
