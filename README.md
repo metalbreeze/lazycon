@@ -32,7 +32,7 @@ How to use:
 ```bash
   lazycon.sh jump
 ```
-..* test1
+  1 test1
 ..1 test2
 ..2.if you not in sydeny folder.
 ```bash
