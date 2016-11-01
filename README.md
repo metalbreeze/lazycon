@@ -28,11 +28,11 @@ mkdir sydeny
 How to use:
 ===========================================================
 1.connect to the terminal without password
-..* .if you on the sydeny folder, the connnection string will transform to sydney-jump, so 1 & 2 are same
+  1.if you on the sydeny folder, the connnection string will transform to sydney-jump, so 1 & 2 are same
 ```bash
   lazycon.sh jump
 ```
-..* .if you not in sydeny folder.
+  2.if you not in sydeny folder.
 ```bash
 lazycon.sh sydney-jump
 ```
