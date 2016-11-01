@@ -15,7 +15,7 @@ Host sydeny-jump2
  User usr2
  IdentityFile /home/user/ssh_rsa
  #cmd sudo su -
- #word sudo_su_passwor_without_empty_space
+ #word sudo_su_password_without_empty_space
 
 ```
 2.make a dir which named sydeny
@@ -28,7 +28,7 @@ mkdir sydeny
 How to use:
 ===========================================================
 1.connect to the terminal without password
-  * if you on the sydeny folder, the connnection string will transform to sydney-jump, so 1 & 2 are same
+  * if you on the sydeny folder, lazycon will combine dirname+ parameters ,say :sydney-jump,so 1 & 2 are same
 ```bash
   lazycon.sh jump
 ```
